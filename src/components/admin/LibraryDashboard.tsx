@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   BookOpen, LogOut, Search, Users, DollarSign, 
   AlertCircle, CheckCircle, XCircle, Eye, Plus,
-  Calendar, TrendingUp, Clock, Download, Shield
+  Calendar, TrendingUp, Clock, Download, Shield, FileText, X, Filter
 } from 'lucide-react';
 
 interface LibraryDashboardProps {
@@ -10,131 +10,234 @@ interface LibraryDashboardProps {
 }
 
 export function LibraryDashboard({ onLogout }: LibraryDashboardProps) {
-  const [activeTab, setActiveTab] = useState('issued');
+  const [activeTab, setActiveTab] = useState('book-issue');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [libraryRecordView, setLibraryRecordView] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   
+  // Book Issue Form State
+  const [bookIssueForm, setBookIssueForm] = useState({
+    bookId: '',
+    bookName: '',
+    studentId: '',
+    studentName: '',
+    issueDate: new Date().toISOString().split('T')[0],
+    returnDate: '',
+    reissued: false
+  });
+
   const [issuedBooks, setIssuedBooks] = useState([
     {
       id: 1,
       studentId: 'HIMCS2024001',
       studentName: 'Rajesh Kumar',
+      bookId: 'BK-001',
       bookTitle: 'Data Structures and Algorithms',
       bookCode: 'CS-101',
       issueDate: '2025-11-15',
       dueDate: '2025-11-29',
+      returnDate: null,
       status: 'issued',
-      fine: 0
+      fine: 0,
+      reissued: false
     },
     {
       id: 2,
       studentId: 'HIMCS2024002',
       studentName: 'Priya Sharma',
+      bookId: 'BK-002',
       bookTitle: 'Database Management Systems',
       bookCode: 'CS-202',
       issueDate: '2025-11-10',
       dueDate: '2025-11-24',
+      returnDate: null,
       status: 'overdue',
-      fine: 50
+      fine: 50,
+      reissued: false
     },
     {
       id: 3,
       studentId: 'HIMCS2024003',
       studentName: 'Amit Singh',
+      bookId: 'BK-003',
       bookTitle: 'Operating Systems',
       bookCode: 'CS-303',
       issueDate: '2025-11-20',
       dueDate: '2025-12-04',
+      returnDate: null,
       status: 'issued',
-      fine: 0
+      fine: 0,
+      reissued: true
     },
     {
       id: 4,
       studentId: 'HIMCS2024004',
       studentName: 'Sneha Patel',
+      bookId: 'BK-004',
       bookTitle: 'Computer Networks',
       bookCode: 'CS-404',
       issueDate: '2025-11-01',
       dueDate: '2025-11-15',
+      returnDate: null,
       status: 'overdue',
-      fine: 150
+      fine: 150,
+      reissued: false
     },
   ]);
 
-  const [noDuesRequests, setNoDuesRequests] = useState([
+  const [applications, setApplications] = useState([
+    {
+      id: 1,
+      studentId: 'HIMCS2024001',
+      studentName: 'Rajesh Kumar',
+      applicationType: 'Reissue',
+      bookTitle: 'Data Structures and Algorithms',
+      bookId: 'BK-001',
+      status: 'pending',
+      date: '2025-11-20'
+    },
+    {
+      id: 2,
+      studentId: 'HIMCS2024002',
+      studentName: 'Priya Sharma',
+      applicationType: 'Fine Relaxation',
+      bookTitle: 'Database Management Systems',
+      bookId: 'BK-002',
+      status: 'pending',
+      date: '2025-11-21',
+      reason: 'Medical emergency',
+      document: 'medical_certificate.pdf'
+    },
+    {
+      id: 3,
+      studentId: 'HIMCS2024003',
+      studentName: 'Amit Singh',
+      applicationType: 'Reissue',
+      bookTitle: 'Operating Systems',
+      bookId: 'BK-003',
+      status: 'pending',
+      date: '2025-11-22'
+    }
+  ]);
+
+  const [finesCollected, setFinesCollected] = useState([
     {
       id: 1,
       studentId: 'HIMCS2024005',
       studentName: 'Rahul Verma',
-      course: 'MCA',
-      booksIssued: 0,
-      pendingFines: 0,
-      status: 'pending'
+      bookTitle: 'Software Engineering',
+      fineAmount: 100,
+      paymentDate: '2025-11-15',
+      month: '2025-11'
     },
     {
       id: 2,
       studentId: 'HIMCS2024006',
       studentName: 'Anita Desai',
-      course: 'MBA',
-      booksIssued: 1,
-      pendingFines: 0,
-      status: 'pending'
+      bookTitle: 'Computer Networks',
+      fineAmount: 75,
+      paymentDate: '2025-11-18',
+      month: '2025-11'
     },
     {
       id: 3,
       studentId: 'HIMCS2024007',
       studentName: 'Vikram Shah',
-      course: 'MCA',
-      booksIssued: 0,
-      pendingFines: 25,
-      status: 'pending'
-    },
+      bookTitle: 'Database Systems',
+      fineAmount: 50,
+      paymentDate: '2025-10-25',
+      month: '2025-10'
+    }
   ]);
 
   const stats = {
-    totalIssued: issuedBooks.length,
-    overdue: issuedBooks.filter(b => b.status === 'overdue').length,
+    totalIssued: issuedBooks.filter(b => !b.returnDate).length,
+    overdue: issuedBooks.filter(b => b.status === 'overdue' && !b.returnDate).length,
     totalFines: issuedBooks.reduce((sum, b) => sum + b.fine, 0),
-    noDuesPending: noDuesRequests.filter(r => r.status === 'pending').length,
+    finesCollected: finesCollected.reduce((sum, f) => sum + f.fineAmount, 0),
   };
 
-  const handleReturnBook = (book: any) => {
-    setIssuedBooks(issuedBooks.filter(b => b.id !== book.id));
+  const handleIssueBook = () => {
+    if (!bookIssueForm.bookId || !bookIssueForm.bookName || !bookIssueForm.studentId || !bookIssueForm.studentName) {
+      alert('Please fill all required fields');
+      return;
+    }
+    
+    const returnDate = new Date(bookIssueForm.issueDate);
+    returnDate.setDate(returnDate.getDate() + 14);
+    
+    const newBook = {
+      id: issuedBooks.length + 1,
+      studentId: bookIssueForm.studentId,
+      studentName: bookIssueForm.studentName,
+      bookId: bookIssueForm.bookId,
+      bookTitle: bookIssueForm.bookName,
+      bookCode: bookIssueForm.bookId,
+      issueDate: bookIssueForm.issueDate,
+      dueDate: returnDate.toISOString().split('T')[0],
+      returnDate: null,
+      status: 'issued',
+      fine: 0,
+      reissued: bookIssueForm.reissued
+    };
+    
+    setIssuedBooks([...issuedBooks, newBook]);
+    setBookIssueForm({
+      bookId: '',
+      bookName: '',
+      studentId: '',
+      studentName: '',
+      issueDate: new Date().toISOString().split('T')[0],
+      returnDate: '',
+      reissued: false
+    });
+    alert('Book issued successfully!');
+  };
+
+  const handleUpdateBook = (book: any) => {
+    const updatedBooks = issuedBooks.map(b => 
+      b.id === book.id ? { ...b, ...book } : b
+    );
+    setIssuedBooks(updatedBooks);
     setShowModal(false);
-    alert(`Book "${book.bookTitle}" returned successfully!`);
+    alert('Book details updated successfully!');
   };
 
-  const handleReissue = (book: any) => {
-    const newDueDate = new Date();
-    newDueDate.setDate(newDueDate.getDate() + 14);
+  const handleApproveReturn = (book: any) => {
     setIssuedBooks(issuedBooks.map(b => 
-      b.id === book.id ? { ...b, dueDate: newDueDate.toISOString().split('T')[0], status: 'issued', fine: 0 } : b
+      b.id === book.id ? { ...b, returnDate: new Date().toISOString().split('T')[0], status: 'returned' } : b
     ));
     setShowModal(false);
-    alert(`Book "${book.bookTitle}" reissued successfully!`);
+    alert('Return approved successfully!');
   };
 
-  const handleClearDues = (request: any) => {
-    if (request.booksIssued > 0) {
-      alert('Cannot clear dues - Student has books issued!');
-      return;
+  const handleReissue = (app: any) => {
+    const book = issuedBooks.find(b => b.bookId === app.bookId);
+    if (book) {
+      const newDueDate = new Date();
+      newDueDate.setDate(newDueDate.getDate() + 14);
+      setIssuedBooks(issuedBooks.map(b => 
+        b.id === book.id ? { ...b, dueDate: newDueDate.toISOString().split('T')[0], reissued: true, fine: 0, status: 'issued' } : b
+      ));
+      setApplications(applications.filter(a => a.id !== app.id));
+      alert('Book reissued successfully!');
     }
-    if (request.pendingFines > 0) {
-      alert('Cannot clear dues - Student has pending fines!');
-      return;
-    }
-    setNoDuesRequests(noDuesRequests.map(r => 
-      r.id === request.id ? { ...r, status: 'cleared' } : r
-    ));
-    alert(`No Dues cleared for ${request.studentName}`);
   };
 
-  const handleRejectDues = (request: any) => {
-    setNoDuesRequests(noDuesRequests.map(r => 
-      r.id === request.id ? { ...r, status: 'rejected' } : r
-    ));
-    alert(`No Dues rejected for ${request.studentName}`);
+  const handleAdjustFine = (app: any) => {
+    const book = issuedBooks.find(b => b.bookId === app.bookId);
+    if (book) {
+      const newFine = prompt('Enter adjusted fine amount:', book.fine.toString());
+      if (newFine !== null) {
+        setIssuedBooks(issuedBooks.map(b => 
+          b.id === book.id ? { ...b, fine: parseFloat(newFine) || 0 } : b
+        ));
+        setApplications(applications.filter(a => a.id !== app.id));
+        alert('Fine adjusted successfully!');
+      }
+    }
   };
 
   const filteredBooks = issuedBooks.filter(book => 
@@ -143,13 +246,22 @@ export function LibraryDashboard({ onLogout }: LibraryDashboardProps) {
     book.bookTitle.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const overdueBooks = issuedBooks.filter(b => {
+    const dueDate = new Date(b.dueDate);
+    const today = new Date();
+    return dueDate < today && !b.returnDate;
+  });
+
+  const activeIssuedBooks = issuedBooks.filter(b => !b.returnDate);
+
+  const filteredFines = finesCollected.filter(f => f.month === selectedMonth);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'issued': return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'overdue': return 'bg-red-100 text-red-800 border-red-300';
-      case 'cleared': return 'bg-green-100 text-green-800 border-green-300';
+      case 'returned': return 'bg-green-100 text-green-800 border-green-300';
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
@@ -192,246 +304,200 @@ export function LibraryDashboard({ onLogout }: LibraryDashboardProps) {
       </header>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-6">
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white/90 backdrop-blur-xl border border-purple-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+        {/* Stats Cards - Clickable for Library Records */}
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <button
+            onClick={() => {
+              setActiveTab('library-records');
+              setLibraryRecordView('issued');
+            }}
+            className="bg-white/90 backdrop-blur-xl border border-purple-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 text-left"
+          >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-gray-600 text-sm">Books Issued</p>
+              <p className="text-gray-600 text-sm">Total Books Issued</p>
               <BookOpen className="w-10 h-10 text-purple-600" />
             </div>
             <p className="text-3xl text-gray-900 mb-1">{stats.totalIssued}</p>
-            <p className="text-purple-600 text-sm">Currently active</p>
-          </div>
+            <p className="text-purple-600 text-sm">Click to view details</p>
+          </button>
 
-          <div className="bg-white/90 backdrop-blur-xl border border-red-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+          <button
+            onClick={() => {
+              setActiveTab('library-records');
+              setLibraryRecordView('overdue');
+            }}
+            className="bg-white/90 backdrop-blur-xl border border-red-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 text-left"
+          >
             <div className="flex items-center justify-between mb-3">
               <p className="text-gray-600 text-sm">Overdue Books</p>
               <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
             <p className="text-3xl text-gray-900 mb-1">{stats.overdue}</p>
-            <p className="text-red-600 text-sm">Needs attention</p>
-          </div>
+            <p className="text-red-600 text-sm">Click to view details</p>
+          </button>
 
-          <div className="bg-white/90 backdrop-blur-xl border border-green-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+          <button
+            onClick={() => {
+              setActiveTab('library-records');
+              setLibraryRecordView('fines');
+            }}
+            className="bg-white/90 backdrop-blur-xl border border-green-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 text-left"
+          >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-gray-600 text-sm">Total Fines</p>
+              <p className="text-gray-600 text-sm">Fines Collected</p>
               <DollarSign className="w-10 h-10 text-green-600" />
             </div>
-            <p className="text-3xl text-gray-900 mb-1">₹{stats.totalFines}</p>
-            <p className="text-green-600 text-sm">Pending collection</p>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur-xl border border-yellow-200 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-gray-600 text-sm">No Dues</p>
-              <Clock className="w-10 h-10 text-yellow-600" />
-            </div>
-            <p className="text-3xl text-gray-900 mb-1">{stats.noDuesPending}</p>
-            <p className="text-yellow-600 text-sm">Pending clearance</p>
-          </div>
+            <p className="text-3xl text-gray-900 mb-1">₹{stats.finesCollected}</p>
+            <p className="text-green-600 text-sm">Click to view details</p>
+          </button>
         </div>
 
         {/* Main Content */}
         <div className="bg-white/90 backdrop-blur-xl border border-purple-200 rounded-2xl shadow-xl overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
-            <div className="flex gap-1 p-3">
+            <div className="flex gap-1 p-3 overflow-x-auto">
               <button
-                onClick={() => setActiveTab('issued')}
-                className={`px-5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'issued'
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-white/50'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Issued Books
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('nodues')}
-                className={`px-5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'nodues'
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-white/50'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  No Dues Requests
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('issue')}
-                className={`px-5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'issue'
+                onClick={() => setActiveTab('book-issue')}
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'book-issue'
                     ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
                     : 'text-gray-700 hover:bg-white/50'
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
-                  Issue New Book
+                  Book Issue
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('applications')}
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'applications'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-white/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Applications
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('library-records');
+                  setLibraryRecordView(null);
+                }}
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'library-records'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-white/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Library Records
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('payment-details')}
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'payment-details'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-white/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Payment Details
                 </span>
               </button>
             </div>
           </div>
 
           <div className="p-6">
-            {activeTab === 'issued' && (
-              <div className="space-y-4">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search by student name, ID, or book title..."
-                    className="w-full pl-12 pr-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/70"
-                  />
-                </div>
-
-                {/* Books Table */}
-                <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
-                  <table className="w-full">
-                    <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Name</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Book Title</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Code</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Issue Date</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Due Date</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Fine</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Status</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-purple-100">
-                      {filteredBooks.map((book) => (
-                        <tr key={book.id} className="hover:bg-purple-50/50 transition-colors">
-                          <td className="px-6 py-4 text-purple-600">{book.studentId}</td>
-                          <td className="px-6 py-4 text-gray-900">{book.studentName}</td>
-                          <td className="px-6 py-4 text-gray-700">{book.bookTitle}</td>
-                          <td className="px-6 py-4 text-gray-700">{book.bookCode}</td>
-                          <td className="px-6 py-4 text-gray-700">{book.issueDate}</td>
-                          <td className="px-6 py-4 text-gray-700">{book.dueDate}</td>
-                          <td className="px-6 py-4">
-                            <span className={book.fine > 0 ? 'text-red-600' : 'text-green-600'}>
-                              ₹{book.fine}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-3 py-1.5 rounded-full text-sm border ${getStatusColor(book.status)}`}>
-                              {book.status.charAt(0).toUpperCase() + book.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => {
-                                setSelectedBook(book);
-                                setShowModal(true);
-                              }}
-                              className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'nodues' && (
-              <div className="space-y-4">
-                <h3 className="text-gray-900 mb-4">No Dues Clearance Requests</h3>
-                <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
-                  <table className="w-full">
-                    <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Name</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Course</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Books Issued</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Pending Fines</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Status</th>
-                        <th className="px-6 py-4 text-left text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-purple-100">
-                      {noDuesRequests.map((request) => (
-                        <tr key={request.id} className="hover:bg-purple-50/50 transition-colors">
-                          <td className="px-6 py-4 text-purple-600">{request.studentId}</td>
-                          <td className="px-6 py-4 text-gray-900">{request.studentName}</td>
-                          <td className="px-6 py-4 text-gray-700">{request.course}</td>
-                          <td className="px-6 py-4">
-                            <span className={request.booksIssued > 0 ? 'text-red-600' : 'text-green-600'}>
-                              {request.booksIssued}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={request.pendingFines > 0 ? 'text-red-600' : 'text-green-600'}>
-                              ₹{request.pendingFines}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-3 py-1.5 rounded-full text-sm border ${getStatusColor(request.status)}`}>
-                              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            {request.status === 'pending' && (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleClearDues(request)}
-                                  className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
-                                >
-                                  Clear
-                                </button>
-                                <button
-                                  onClick={() => handleRejectDues(request)}
-                                  className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'issue' && (
+            {/* Book Issue Tab */}
+            {activeTab === 'book-issue' && (
               <div className="max-w-2xl mx-auto space-y-4">
-                <h3 className="text-gray-900 mb-4">Issue New Book</h3>
+                <h3 className="text-gray-900 mb-4">Issue Book</h3>
                 <div className="bg-purple-50/50 rounded-xl p-6 space-y-4">
                   <div>
-                    <label className="block text-gray-700 mb-2">Student ID</label>
+                    <label className="block text-gray-700 mb-2">Book ID *</label>
                     <input
                       type="text"
+                      value={bookIssueForm.bookId}
+                      onChange={(e) => setBookIssueForm({...bookIssueForm, bookId: e.target.value})}
+                      placeholder="Enter book ID"
+                      className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-2">Book Name *</label>
+                    <input
+                      type="text"
+                      value={bookIssueForm.bookName}
+                      onChange={(e) => setBookIssueForm({...bookIssueForm, bookName: e.target.value})}
+                      placeholder="Enter book name"
+                      className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-2">Student ID *</label>
+                    <input
+                      type="text"
+                      value={bookIssueForm.studentId}
+                      onChange={(e) => setBookIssueForm({...bookIssueForm, studentId: e.target.value})}
                       placeholder="Enter student ID"
                       className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-700 mb-2">Book Code</label>
+                    <label className="block text-gray-700 mb-2">Student Name *</label>
                     <input
                       type="text"
-                      placeholder="Enter book code"
+                      value={bookIssueForm.studentName}
+                      onChange={(e) => setBookIssueForm({...bookIssueForm, studentName: e.target.value})}
+                      placeholder="Enter student name"
                       className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-gray-700 mb-2">Issue Date *</label>
+                    <input
+                      type="date"
+                      value={bookIssueForm.issueDate}
+                      onChange={(e) => {
+                        const date = e.target.value;
+                        setBookIssueForm({...bookIssueForm, issueDate: date});
+                        const returnDate = new Date(date);
+                        returnDate.setDate(returnDate.getDate() + 14);
+                        setBookIssueForm(prev => ({...prev, returnDate: returnDate.toISOString().split('T')[0]}));
+                      }}
+                      className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-2">Return Date</label>
+                    <input
+                      type="date"
+                      value={bookIssueForm.returnDate}
+                      onChange={(e) => setBookIssueForm({...bookIssueForm, returnDate: e.target.value})}
+                      className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      readOnly
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="reissued"
+                      checked={bookIssueForm.reissued}
+                      onChange={(e) => setBookIssueForm({...bookIssueForm, reissued: e.target.checked})}
+                      className="w-4 h-4"
+                    />
+                    <label htmlFor="reissued" className="text-gray-700">Reissued</label>
+                  </div>
                   <button 
-                    onClick={() => alert('Book issued successfully!')}
+                    onClick={handleIssueBook}
                     className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all"
                   >
                     Issue Book
@@ -439,11 +505,278 @@ export function LibraryDashboard({ onLogout }: LibraryDashboardProps) {
                 </div>
               </div>
             )}
+
+            {/* Applications Tab */}
+            {activeTab === 'applications' && (
+              <div className="space-y-4">
+                <h3 className="text-gray-900 mb-4">Applications</h3>
+                <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Application Type</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Book</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Date</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Status</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-purple-100">
+                      {applications.map((app) => (
+                        <tr key={app.id} className="hover:bg-purple-50/50 transition-colors">
+                          <td className="px-6 py-4 text-purple-600">{app.studentId}</td>
+                          <td className="px-6 py-4 text-gray-900">{app.studentName}</td>
+                          <td className="px-6 py-4 text-gray-700">{app.applicationType}</td>
+                          <td className="px-6 py-4 text-gray-700">{app.bookTitle}</td>
+                          <td className="px-6 py-4 text-gray-700">{app.date}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1.5 rounded-full text-sm border ${getStatusColor(app.status)}`}>
+                              {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            {app.applicationType === 'Reissue' ? (
+                              <button
+                                onClick={() => handleReissue(app)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              >
+                                Reissue
+                              </button>
+                            ) : app.applicationType === 'Fine Relaxation' ? (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => alert(`Reason: ${app.reason || 'Not provided'}`)}
+                                  className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                                >
+                                  View Request
+                                </button>
+                                <button
+                                  onClick={() => alert(`Document: ${app.document || 'No document uploaded'}`)}
+                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                                >
+                                  View Document
+                                </button>
+                                <button
+                                  onClick={() => handleAdjustFine(app)}
+                                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                >
+                                  Adjust Fine
+                                </button>
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Library Records Tab */}
+            {activeTab === 'library-records' && (
+              <div className="space-y-4">
+                {libraryRecordView === null && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">Click on a stat card above to view details</p>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <button
+                        onClick={() => setLibraryRecordView('issued')}
+                        className="p-6 border-2 border-purple-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all"
+                      >
+                        <BookOpen className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                        <p className="text-gray-900">Total Books Issued</p>
+                      </button>
+                      <button
+                        onClick={() => setLibraryRecordView('overdue')}
+                        className="p-6 border-2 border-red-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all"
+                      >
+                        <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
+                        <p className="text-gray-900">Overdue Books</p>
+                      </button>
+                      <button
+                        onClick={() => setLibraryRecordView('fines')}
+                        className="p-6 border-2 border-green-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all"
+                      >
+                        <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                        <p className="text-gray-900">Fines Collected</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {libraryRecordView === 'issued' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-gray-900">Total Books Issued</h3>
+                      <button
+                        onClick={() => setLibraryRecordView(null)}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
+                      <table className="w-full">
+                        <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Book Title</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Issue Date</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Return Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-purple-100">
+                          {activeIssuedBooks.map((book) => (
+                            <tr key={book.id} className="hover:bg-purple-50/50 transition-colors">
+                              <td className="px-6 py-4 text-purple-600">{book.studentId}</td>
+                              <td className="px-6 py-4 text-gray-900">{book.studentName}</td>
+                              <td className="px-6 py-4 text-gray-700">{book.bookTitle}</td>
+                              <td className="px-6 py-4 text-gray-700">{book.issueDate}</td>
+                              <td className="px-6 py-4 text-gray-700">{book.dueDate}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {libraryRecordView === 'overdue' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-gray-900">Overdue Books</h3>
+                      <button
+                        onClick={() => setLibraryRecordView(null)}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
+                      <table className="w-full">
+                        <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Book Title</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Issue Date</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Return Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-purple-100">
+                          {overdueBooks.map((book) => (
+                            <tr key={book.id} className="hover:bg-purple-50/50 transition-colors">
+                              <td className="px-6 py-4 text-purple-600">{book.studentId}</td>
+                              <td className="px-6 py-4 text-gray-900">{book.studentName}</td>
+                              <td className="px-6 py-4 text-gray-700">{book.bookTitle}</td>
+                              <td className="px-6 py-4 text-gray-700">{book.issueDate}</td>
+                              <td className="px-6 py-4 text-red-600">{book.dueDate}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {libraryRecordView === 'fines' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-gray-900">Fines Collected</h3>
+                      <button
+                        onClick={() => setLibraryRecordView(null)}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
+                      <table className="w-full">
+                        <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Book Title</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Fine Amount</th>
+                            <th className="px-6 py-4 text-left text-gray-700">Payment Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-purple-100">
+                          {finesCollected.map((fine) => (
+                            <tr key={fine.id} className="hover:bg-purple-50/50 transition-colors">
+                              <td className="px-6 py-4 text-purple-600">{fine.studentId}</td>
+                              <td className="px-6 py-4 text-gray-900">{fine.studentName}</td>
+                              <td className="px-6 py-4 text-gray-700">{fine.bookTitle}</td>
+                              <td className="px-6 py-4 text-green-600">₹{fine.fineAmount}</td>
+                              <td className="px-6 py-4 text-gray-700">{fine.paymentDate}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Payment Details Tab */}
+            {activeTab === 'payment-details' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-gray-900">Payment Details</h3>
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-600" />
+                    <input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="px-4 py-2 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-x-auto bg-white/70 rounded-xl border border-purple-200">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Book Title</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Fine Amount</th>
+                        <th className="px-6 py-4 text-left text-gray-700">Payment Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-purple-100">
+                      {filteredFines.length > 0 ? (
+                        filteredFines.map((fine) => (
+                          <tr key={fine.id} className="hover:bg-purple-50/50 transition-colors">
+                            <td className="px-6 py-4 text-purple-600">{fine.studentId}</td>
+                            <td className="px-6 py-4 text-gray-900">{fine.studentName}</td>
+                            <td className="px-6 py-4 text-gray-700">{fine.bookTitle}</td>
+                            <td className="px-6 py-4 text-green-600">₹{fine.fineAmount}</td>
+                            <td className="px-6 py-4 text-gray-700">{fine.paymentDate}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                            No payments found for selected month
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Book Details Modal */}
+      {/* Book Update Modal */}
       {showModal && selectedBook && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
@@ -452,33 +785,74 @@ export function LibraryDashboard({ onLogout }: LibraryDashboardProps) {
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-gray-900">Book Details</h3>
+                <h3 className="text-gray-900">Update Book Details</h3>
                 <p className="text-gray-600 text-sm">Manage this book</p>
               </div>
             </div>
 
-            <div className="bg-purple-50 rounded-xl p-4 mb-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Student:</span>
-                <strong className="text-gray-900">{selectedBook.studentName}</strong>
+            <div className="space-y-4 mb-4">
+              <div>
+                <label className="block text-gray-700 mb-2">Book ID</label>
+                <input
+                  type="text"
+                  value={selectedBook.bookId}
+                  onChange={(e) => setSelectedBook({...selectedBook, bookId: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Book:</span>
-                <strong className="text-gray-900">{selectedBook.bookTitle}</strong>
+              <div>
+                <label className="block text-gray-700 mb-2">Book Name</label>
+                <input
+                  type="text"
+                  value={selectedBook.bookTitle}
+                  onChange={(e) => setSelectedBook({...selectedBook, bookTitle: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Issue Date:</span>
-                <strong className="text-gray-900">{selectedBook.issueDate}</strong>
+              <div>
+                <label className="block text-gray-700 mb-2">Student Name</label>
+                <input
+                  type="text"
+                  value={selectedBook.studentName}
+                  onChange={(e) => setSelectedBook({...selectedBook, studentName: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Due Date:</span>
-                <strong className="text-gray-900">{selectedBook.dueDate}</strong>
+              <div>
+                <label className="block text-gray-700 mb-2">Issue Date</label>
+                <input
+                  type="date"
+                  value={selectedBook.issueDate}
+                  onChange={(e) => setSelectedBook({...selectedBook, issueDate: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Fine:</span>
-                <strong className={selectedBook.fine > 0 ? 'text-red-600' : 'text-green-600'}>
-                  ₹{selectedBook.fine}
-                </strong>
+              <div>
+                <label className="block text-gray-700 mb-2">Return Date</label>
+                <input
+                  type="date"
+                  value={selectedBook.dueDate}
+                  onChange={(e) => setSelectedBook({...selectedBook, dueDate: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-2">Fine</label>
+                <input
+                  type="number"
+                  value={selectedBook.fine}
+                  onChange={(e) => setSelectedBook({...selectedBook, fine: parseFloat(e.target.value) || 0})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedBook.reissued}
+                  onChange={(e) => setSelectedBook({...selectedBook, reissued: e.target.checked})}
+                  className="w-4 h-4"
+                />
+                <label className="text-gray-700">Reissued</label>
               </div>
             </div>
 
@@ -490,16 +864,16 @@ export function LibraryDashboard({ onLogout }: LibraryDashboardProps) {
                 Cancel
               </button>
               <button
-                onClick={() => handleReissue(selectedBook)}
+                onClick={() => handleUpdateBook(selectedBook)}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all"
               >
-                Reissue
+                Update
               </button>
               <button
-                onClick={() => handleReturnBook(selectedBook)}
+                onClick={() => handleApproveReturn(selectedBook)}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:shadow-lg transition-all"
               >
-                Return
+                Approve Return
               </button>
             </div>
           </div>

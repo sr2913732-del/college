@@ -338,12 +338,26 @@ export function RegistrarDashboard({ onLogout }: RegistrarDashboardProps) {
                   <Upload className="w-16 h-16 text-blue-500 mx-auto mb-4" />
                   <p className="text-gray-900 mb-2">Upload Student Documents</p>
                   <p className="text-gray-600 text-sm mb-4">PDF files only (Max 10MB per file)</p>
-                  <button 
-                    onClick={() => alert('File upload dialog would open here')}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all"
+                  <input
+                    type="file"
+                    id="file-upload"
+                    accept=".pdf"
+                    multiple
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files && files.length > 0) {
+                        const fileNames = Array.from(files).map(f => f.name).join(', ');
+                        alert(`Selected ${files.length} file(s): ${fileNames}\n\nFiles would be uploaded to the server.`);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-block px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all cursor-pointer"
                   >
                     Select Files
-                  </button>
+                  </label>
                 </div>
               </div>
             )}

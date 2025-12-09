@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { GraduationCap, Upload, Download, CheckCircle, XCircle, Truck } from 'lucide-react';
+import { GraduationCap, Upload, Download, CheckCircle, XCircle, Truck, ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface DegreeProps {
   studentData: any;
+  onBack?: () => void;
 }
 
-export function Degree({ studentData }: DegreeProps) {
+export function Degree({ studentData, onBack }: DegreeProps) {
   const [noDuesCleared, setNoDuesCleared] = useState(true);
   const [deliveryMethod, setDeliveryMethod] = useState<'collect' | 'courier'>('collect');
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
@@ -70,6 +71,16 @@ export function Degree({ studentData }: DegreeProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Academic Services
+          </button>
+        )}
         {/* Header */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">

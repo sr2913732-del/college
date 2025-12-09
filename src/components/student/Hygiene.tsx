@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { AlertCircle, Upload, CheckCircle, Clock } from 'lucide-react';
+import { AlertCircle, Upload, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface HygieneProps {
   studentData: any;
+  onBack?: () => void;
 }
 
-export function Hygiene({ studentData }: HygieneProps) {
+export function Hygiene({ studentData, onBack }: HygieneProps) {
   const [complaintSubmitted, setComplaintSubmitted] = useState(false);
   const [complaint, setComplaint] = useState({
     category: '',
@@ -111,6 +112,16 @@ export function Hygiene({ studentData }: HygieneProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+        )}
         {/* Header */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">

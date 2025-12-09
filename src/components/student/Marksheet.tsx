@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { FileText, Upload, Download, CheckCircle, XCircle, AlertCircle, Truck } from 'lucide-react';
+import { FileText, Upload, Download, CheckCircle, XCircle, AlertCircle, Truck, ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface MarksheetProps {
   studentData: any;
+  onBack?: () => void;
 }
 
-export function Marksheet({ studentData }: MarksheetProps) {
+export function Marksheet({ studentData, onBack }: MarksheetProps) {
   const [noDuesCleared, setNoDuesCleared] = useState(true); // Mock - should come from NoDues component
   const [deliveryMethod, setDeliveryMethod] = useState<'collect' | 'courier'>('collect');
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
@@ -87,6 +88,16 @@ export function Marksheet({ studentData }: MarksheetProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Academic Services
+          </button>
+        )}
         {/* Header */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">

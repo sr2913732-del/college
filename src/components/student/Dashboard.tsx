@@ -124,19 +124,19 @@ export function StudentDashboard({
       case "activity":
         return <YourActivity studentData={studentData} />;
       case "library":
-        return <Library studentData={studentData} />;
+        return <Library studentData={studentData} onBack={() => setActiveModule("overview")} />;
       case "no-dues":
-        return <NoDues studentData={studentData} />;
+        return <NoDues studentData={studentData} onBack={() => setActiveModule("financial-services")} />;
       case "marksheet":
-        return <Marksheet studentData={studentData} />;
+        return <Marksheet studentData={studentData} onBack={() => setActiveModule("academic-services")} />;
       case "degree":
-        return <Degree studentData={studentData} />;
+        return <Degree studentData={studentData} onBack={() => setActiveModule("academic-services")} />;
       case "caution-money":
-        return <CautionMoney studentData={studentData} />;
+        return <CautionMoney studentData={studentData} onBack={() => setActiveModule("financial-services")} />;
       case "hygiene":
-        return <Hygiene studentData={studentData} />;
+        return <Hygiene studentData={studentData} onBack={() => setActiveModule("overview")} />;
       case "bus":
-        return <BusNavigation />;
+        return <BusNavigation onBack={() => setActiveModule("overview")} />;
       case "profile":
         return <Profile studentData={studentData} />;
       case "about":
@@ -1211,9 +1211,19 @@ function Overview({
   );
 }
 
-function BusNavigation() {
+function BusNavigation({ onBack }: { onBack?: () => void }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      {/* Back Button */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </button>
+      )}
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-12 text-center">
         <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <Bus className="w-12 h-12 text-teal-600" />

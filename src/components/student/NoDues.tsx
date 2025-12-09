@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, IndianRupee, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, IndianRupee, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface NoDuesProps {
   studentData: any;
+  onBack?: () => void;
 }
 
 interface DepartmentDue {
@@ -14,20 +15,13 @@ interface DepartmentDue {
   lastUpdated: string;
 }
 
-export function NoDues({ studentData }: NoDuesProps) {
+export function NoDues({ studentData, onBack }: NoDuesProps) {
   const [departments, setDepartments] = useState<DepartmentDue[]>([
-    { id: 'office', name: 'Office Section', amount: 0, status: 'cleared', lastUpdated: '2025-11-10' },
     { id: 'library', name: 'Library Section', amount: 50, status: 'pending', lastUpdated: '2025-11-18' },
-    { id: 'tnp', name: 'T & P Cell', amount: 0, status: 'cleared', lastUpdated: '2025-11-05' },
-    { id: 'store', name: 'Store Section', amount: 0, status: 'cleared', lastUpdated: '2025-11-01' },
-    { id: 'computer', name: 'Computer Lab Section', amount: 200, status: 'pending', lastUpdated: '2025-11-15' },
-    { id: 'mba', name: 'MBA Section', amount: 0, status: 'cleared', lastUpdated: '2025-10-28' },
-    { id: 'mca', name: 'MCA Section', amount: 0, status: 'cleared', lastUpdated: '2025-10-28' },
-    { id: 'mess', name: 'Mess', amount: 0, status: 'cleared', lastUpdated: '2025-11-12' },
-    { id: 'canteen', name: 'Canteen', amount: 150, status: 'pending', lastUpdated: '2025-11-16' },
-    { id: 'accounts', name: 'Account Section', amount: 0, status: 'cleared', lastUpdated: '2025-11-08' },
-    { id: 'others', name: 'Others', amount: 0, status: 'cleared', lastUpdated: '2025-11-01' }
+    { id: 'accounts', name: 'Account Section', amount: 0, status: 'cleared', lastUpdated: '2025-11-08' }
   ]);
+
+  const [checkDueRequested, setCheckDueRequested] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentDue | null>(null);
@@ -35,6 +29,12 @@ export function NoDues({ studentData }: NoDuesProps) {
   const handlePayDue = (dept: DepartmentDue) => {
     setSelectedDepartment(dept);
     setShowPaymentModal(true);
+  };
+
+  const handleCheckDue = () => {
+    // Send request to account section admin
+    setCheckDueRequested(true);
+    alert('Your request to check dues has been sent to the Account Section. You will be notified once the dues are calculated.');
   };
 
   const processPayment = () => {
@@ -84,6 +84,16 @@ export function NoDues({ studentData }: NoDuesProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Financial Services
+          </button>
+        )}
         {/* Stats Cards */}
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
@@ -180,9 +190,13 @@ export function NoDues({ studentData }: NoDuesProps) {
                       <p className="text-gray-900">{dept.name}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`${dept.amount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        ₹{dept.amount}
-                      </span>
+                      {dept.id === 'accounts' && !checkDueRequested ? (
+                        <span className="text-gray-500 text-sm">Not checked</span>
+                      ) : (
+                        <span className={`${dept.amount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          ₹{dept.amount}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -200,7 +214,21 @@ export function NoDues({ studentData }: NoDuesProps) {
                       <span className="text-gray-700">{dept.lastUpdated}</span>
                     </td>
                     <td className="px-6 py-4">
-                      {dept.status === 'pending' && dept.amount > 0 ? (
+                      {dept.id === 'accounts' ? (
+                        checkDueRequested ? (
+                          <span className="text-blue-600 text-sm flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            Request Sent
+                          </span>
+                        ) : (
+                          <button
+                            onClick={handleCheckDue}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            Check Due
+                          </button>
+                        )
+                      ) : dept.status === 'pending' && dept.amount > 0 ? (
                         <button
                           onClick={() => handlePayDue(dept)}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"

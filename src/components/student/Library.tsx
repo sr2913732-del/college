@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { BookOpen, Calendar, AlertCircle, CheckCircle, IndianRupee, ArrowLeft } from 'lucide-react';
+import { BookOpen, Calendar, AlertCircle, CheckCircle, IndianRupee, ArrowLeft, FileText, Upload, X } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface LibraryProps {
   studentData: any;
+  onBack?: () => void;
 }
 
-export function Library({ studentData }: LibraryProps) {
+export function Library({ studentData, onBack }: LibraryProps) {
   const [books, setBooks] = useState([
     {
       id: 1,
@@ -31,7 +32,10 @@ export function Library({ studentData }: LibraryProps) {
   ]);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showRelaxationModal, setShowRelaxationModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<any>(null);
+  const [relaxationReason, setRelaxationReason] = useState('');
+  const [relaxationDocument, setRelaxationDocument] = useState<File | null>(null);
 
   const handleReissue = (bookId: number) => {
     setBooks(books.map(book => {
@@ -67,6 +71,28 @@ export function Library({ studentData }: LibraryProps) {
     }
   };
 
+  const handleRelaxationRequest = (book: any) => {
+    setSelectedBook(book);
+    setShowRelaxationModal(true);
+  };
+
+  const submitRelaxationRequest = () => {
+    if (!relaxationReason.trim()) {
+      alert('Please provide a reason for fine relaxation');
+      return;
+    }
+    if (!relaxationDocument) {
+      alert('Please upload a proof document');
+      return;
+    }
+    // Here you would typically send the request to the backend
+    alert(`Fine relaxation request submitted for "${selectedBook?.title}". Your request will be reviewed by the library admin.`);
+    setShowRelaxationModal(false);
+    setRelaxationReason('');
+    setRelaxationDocument(null);
+    setSelectedBook(null);
+  };
+
   const totalFine = books.reduce((sum, book) => sum + book.fine, 0);
 
   return (
@@ -87,6 +113,16 @@ export function Library({ studentData }: LibraryProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+        )}
         {/* Stats Cards */}
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
@@ -211,12 +247,21 @@ export function Library({ studentData }: LibraryProps) {
                           </button>
                         )}
                         {book.fine > 0 && (
-                          <button
-                            onClick={() => handlePayFine(book)}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                          >
-                            Pay Fine
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handlePayFine(book)}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                            >
+                              Pay Fine
+                            </button>
+                            <button
+                              onClick={() => handleRelaxationRequest(book)}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center gap-1"
+                            >
+                              <FileText className="w-3 h-3" />
+                              Relaxation
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -264,6 +309,94 @@ export function Library({ studentData }: LibraryProps) {
                 >
                   <IndianRupee className="w-4 h-4" />
                   Pay Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fine Relaxation Request Modal */}
+        {showRelaxationModal && selectedBook && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900">Fine Relaxation Request</h3>
+                <button
+                  onClick={() => {
+                    setShowRelaxationModal(false);
+                    setRelaxationReason('');
+                    setRelaxationDocument(null);
+                    setSelectedBook(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <p className="text-gray-700 mb-2">Book: {selectedBook.title}</p>
+                <p className="text-gray-600 text-sm mb-3">Fine Amount: ₹{selectedBook.fine}</p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-gray-700 mb-2">Reason for Fine Relaxation *</label>
+                  <textarea
+                    value={relaxationReason}
+                    onChange={(e) => setRelaxationReason(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Please explain why you are unable to return the book on time..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">Upload Proof Document *</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-500 transition-colors">
+                    <input
+                      type="file"
+                      id="relaxation-doc"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setRelaxationDocument(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="relaxation-doc"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-gray-600 text-sm">
+                        {relaxationDocument ? relaxationDocument.name : 'Click to upload proof document'}
+                      </span>
+                      <span className="text-gray-500 text-xs mt-1">PDF, JPG, PNG (Max 5MB)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowRelaxationModal(false);
+                    setRelaxationReason('');
+                    setRelaxationDocument(null);
+                    setSelectedBook(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitRelaxationRequest}
+                  className="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Submit Request
                 </button>
               </div>
             </div>

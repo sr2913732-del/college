@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   DollarSign, LogOut, Search, CheckCircle, XCircle, 
   Clock, Eye, TrendingUp, Users, AlertCircle, Shield,
-  Download, Calendar
+  Download, Calendar, FileText
 } from 'lucide-react';
 
 interface AccountsDashboardProps {
@@ -10,10 +10,11 @@ interface AccountsDashboardProps {
 }
 
 export function AccountsDashboard({ onLogout }: AccountsDashboardProps) {
-  const [activeTab, setActiveTab] = useState('nodues');
+  const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [overviewView, setOverviewView] = useState<string | null>(null);
 
   const [noDuesRequests, setNoDuesRequests] = useState([
     {
@@ -83,6 +84,55 @@ export function AccountsDashboard({ onLogout }: AccountsDashboardProps) {
     },
   ]);
 
+  const [applications, setApplications] = useState([
+    {
+      id: 1,
+      studentId: 'HIMCS2024006',
+      studentName: 'Vikram Shah',
+      applicationType: 'Check Dues',
+      status: 'pending',
+      date: '2025-11-20',
+      fineAmount: null
+    },
+    {
+      id: 2,
+      studentId: 'HIMCS2024007',
+      studentName: 'Anita Desai',
+      applicationType: 'Check Dues',
+      status: 'pending',
+      date: '2025-11-21',
+      fineAmount: null
+    },
+    {
+      id: 3,
+      studentId: 'HIMCS2024008',
+      studentName: 'Rohit Kumar',
+      applicationType: 'Check Dues',
+      status: 'pending',
+      date: '2025-11-22',
+      fineAmount: null
+    }
+  ]);
+
+  const [approvedApplications, setApprovedApplications] = useState([
+    {
+      id: 1,
+      studentId: 'HIMCS2024001',
+      studentName: 'Rajesh Kumar',
+      applicationType: 'No Dues',
+      status: 'approved',
+      date: '2025-11-15'
+    },
+    {
+      id: 2,
+      studentId: 'HIMCS2024002',
+      studentName: 'Priya Sharma',
+      applicationType: 'Caution Money',
+      status: 'approved',
+      date: '2025-11-16'
+    }
+  ]);
+
   const stats = {
     noDuesPending: noDuesRequests.filter(r => r.status === 'pending').length,
     cautionMoneyPending: cautionMoneyRequests.filter(r => r.status === 'pending').length,
@@ -124,6 +174,16 @@ export function AccountsDashboard({ onLogout }: AccountsDashboardProps) {
     ));
     setShowModal(false);
     alert(`Caution Money refund rejected for ${request.studentName}`);
+  };
+
+  const handleTellFine = (app: any) => {
+    const fineAmount = prompt(`Enter fine amount for ${app.studentName}:`, '0');
+    if (fineAmount !== null) {
+      setApplications(applications.map(a => 
+        a.id === app.id ? { ...a, fineAmount: parseFloat(fineAmount) || 0, status: 'completed' } : a
+      ));
+      alert(`Fine of ₹${fineAmount} has been communicated to ${app.studentName}`);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -216,10 +276,39 @@ export function AccountsDashboard({ onLogout }: AccountsDashboardProps) {
         <div className="bg-white/90 backdrop-blur-xl border border-green-200 rounded-2xl shadow-xl overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
-            <div className="flex gap-1 p-3">
+            <div className="flex gap-1 p-3 overflow-x-auto">
+              <button
+                onClick={() => {
+                  setActiveTab('overview');
+                  setOverviewView(null);
+                }}
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'overview'
+                    ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-white/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Overview
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('applications')}
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'applications'
+                    ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-white/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Applications
+                </span>
+              </button>
               <button
                 onClick={() => setActiveTab('nodues')}
-                className={`px-5 py-2.5 rounded-xl transition-all ${
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
                   activeTab === 'nodues'
                     ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg'
                     : 'text-gray-700 hover:bg-white/50'
@@ -232,7 +321,7 @@ export function AccountsDashboard({ onLogout }: AccountsDashboardProps) {
               </button>
               <button
                 onClick={() => setActiveTab('caution')}
-                className={`px-5 py-2.5 rounded-xl transition-all ${
+                className={`px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${
                   activeTab === 'caution'
                     ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg'
                     : 'text-gray-700 hover:bg-white/50'
@@ -243,23 +332,142 @@ export function AccountsDashboard({ onLogout }: AccountsDashboardProps) {
                   Caution Money Refund
                 </span>
               </button>
-              <button
-                onClick={() => setActiveTab('reports')}
-                className={`px-5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'reports'
-                    ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-white/50'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Financial Reports
-                </span>
-              </button>
             </div>
           </div>
 
           <div className="p-6">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-gray-900 mb-4">Quick Actions</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <button
+                      onClick={() => {
+                        setActiveTab('applications');
+                        setOverviewView('pending');
+                      }}
+                      className="p-6 border-2 border-green-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-left"
+                    >
+                      <Clock className="w-8 h-8 text-green-600 mb-2" />
+                      <p className="text-gray-900 mb-1">Review Applications</p>
+                      <p className="text-gray-600 text-sm">View all pending applications</p>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('applications');
+                        setOverviewView('approved');
+                      }}
+                      className="p-6 border-2 border-green-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-left"
+                    >
+                      <CheckCircle className="w-8 h-8 text-green-600 mb-2" />
+                      <p className="text-gray-900 mb-1">Approve Documents</p>
+                      <p className="text-gray-600 text-sm">View approved applications</p>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'applications' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <button
+                    onClick={() => setOverviewView('pending')}
+                    className={`px-4 py-2 rounded-lg transition-all ${
+                      overviewView === 'pending' || overviewView === null
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Pending Applications
+                  </button>
+                  <button
+                    onClick={() => setOverviewView('approved')}
+                    className={`px-4 py-2 rounded-lg transition-all ${
+                      overviewView === 'approved'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Approved Applications
+                  </button>
+                </div>
+
+                {(overviewView === 'pending' || overviewView === null) && (
+                  <div className="overflow-x-auto bg-white/70 rounded-xl border border-green-200">
+                    <table className="w-full">
+                      <thead className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Application Type</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Date</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Status</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-green-100">
+                        {applications.filter(a => a.status === 'pending').map((app) => (
+                          <tr key={app.id} className="hover:bg-green-50/50 transition-colors">
+                            <td className="px-6 py-4 text-green-600">{app.studentId}</td>
+                            <td className="px-6 py-4 text-gray-900">{app.studentName}</td>
+                            <td className="px-6 py-4 text-gray-700">{app.applicationType}</td>
+                            <td className="px-6 py-4 text-gray-700">{app.date}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-3 py-1.5 rounded-full text-sm border ${getStatusColor(app.status)}`}>
+                                {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {app.applicationType === 'Check Dues' && (
+                                <button
+                                  onClick={() => handleTellFine(app)}
+                                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                >
+                                  Tell Fine
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {overviewView === 'approved' && (
+                  <div className="overflow-x-auto bg-white/70 rounded-xl border border-green-200">
+                    <table className="w-full">
+                      <thead className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-gray-700">Student ID</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Student Name</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Application Type</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Date</th>
+                          <th className="px-6 py-4 text-left text-gray-700">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-green-100">
+                        {approvedApplications.map((app) => (
+                          <tr key={app.id} className="hover:bg-green-50/50 transition-colors">
+                            <td className="px-6 py-4 text-green-600">{app.studentId}</td>
+                            <td className="px-6 py-4 text-gray-900">{app.studentName}</td>
+                            <td className="px-6 py-4 text-gray-700">{app.applicationType}</td>
+                            <td className="px-6 py-4 text-gray-700">{app.date}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-3 py-1.5 rounded-full text-sm border ${getStatusColor(app.status)}`}>
+                                {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === 'nodues' && (
               <div className="space-y-4">
                 <div className="overflow-x-auto bg-white/70 rounded-xl border border-green-200">
